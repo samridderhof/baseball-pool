@@ -37,6 +37,16 @@ export async function getMembershipForUser(userId: string) {
   return data as Membership | null;
 }
 
+export async function getAuthDebugState() {
+  const user = await getCurrentUser();
+  const membership = user ? await getMembershipForUser(user.id) : null;
+
+  return {
+    user,
+    membership
+  };
+}
+
 export async function requireMembership() {
   const user = await requireUser();
   const membership = await getMembershipForUser(user.id);
