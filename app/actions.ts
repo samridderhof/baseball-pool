@@ -13,6 +13,12 @@ const loginSchema = z.object({
   next: z.string().optional()
 });
 
+const verifyCodeSchema = z.object({
+  email: z.string().email(),
+  token: z.string().trim().min(6).max(6),
+  next: z.string().optional()
+});
+
 const joinSchema = z.object({
   inviteCode: z.string().min(4),
   displayName: z.string().min(2).max(40)
@@ -68,20 +74,18 @@ function cleanNextPath(nextPath: string | undefined) {
   return nextPath;
 }
 
-export async function requestMagicLinkAction(formData: FormData) {
+export async function requestEmailCodeAction(formData: FormData) {
   const parsed = loginSchema.parse({
     email: formData.get("email"),
     next: formData.get("next") ?? undefined
   });
 
   const supabase = await createSupabaseServerClient();
-  const callbackUrl = new URL("/auth/callback", env.siteUrl);
-  callbackUrl.searchParams.set("next", cleanNextPath(parsed.next));
 
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.email,
     options: {
-      emailRedirectTo: callbackUrl.toString()
+      shouldCreateUser: true
     }
   });
 
@@ -89,7 +93,36 @@ export async function requestMagicLinkAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect(`/login?sent=1&email=${encodeURIComponent(parsed.email)}`);
+  redirect(
+    `/login?sent=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
+      cleanNextPath(parsed.next)
+    )}`
+  );
+}
+
+export async function verifyEmailCodeAction(formData: FormData) {
+  const parsed = verifyCodeSchema.parse({
+    email: formData.get("email"),
+    token: formData.get("token"),
+    next: formData.get("next") ?? undefined
+  });
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email: parsed.email,
+    token: parsed.token,
+    type: "email"
+  });
+
+  if (error) {
+    redirect(
+      `/login?sent=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
+        cleanNextPath(parsed.next)
+      )}&error=${encodeURIComponent(error.message)}`
+    );
+  }
+
+  redirect(cleanNextPath(parsed.next));
 }
 
 export async function joinLeagueAction(formData: FormData) {
