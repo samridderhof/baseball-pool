@@ -72,10 +72,10 @@ export async function getCurrentWeekData() {
     getActiveSaturday()
   );
 
-  const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
   const picksPromise =
     games.length > 0
-      ? supabase
+      ? admin
           .from("picks")
           .select("id, membership_id, game_id, picked_team, confidence")
           .eq("membership_id", membership.id)
@@ -87,7 +87,7 @@ export async function getCurrentWeekData() {
 
   const [{ data: picks }, { data: weeklyEntry }] = await Promise.all([
     picksPromise,
-    supabase
+    admin
       .from("weekly_entries")
       .select("id, week_id, membership_id, tiebreak_total_runs")
       .eq("membership_id", membership.id)
