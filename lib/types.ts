@@ -93,3 +93,11 @@ export type WeeklyStandingsGroup = {
   saturdayDate: string | null;
   standings: WeeklyStanding[];
 };
+
+export type PickCompletionStatus = {
+  membershipId: string;
+  displayName: string;
+  savedCount: number;
+  totalGames: number;
+  hasTiebreaker: boolean;
+};

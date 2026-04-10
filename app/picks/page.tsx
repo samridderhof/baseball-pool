@@ -19,7 +19,7 @@ const pickErrors: Record<string, string> = {
 
 export default async function PicksPage({ searchParams }: PicksPageProps) {
   const params = await searchParams;
-  const { slate, games, weeklyEntry } = await getCurrentWeekData();
+  const { slate, games, weeklyEntry, completionStatus } = await getCurrentWeekData();
   const hasGames = games.length > 0;
 
   return (
@@ -41,6 +41,33 @@ export default async function PicksPage({ searchParams }: PicksPageProps) {
         ) : (
           <PicksForm weekId={slate.id} games={games} weeklyEntry={weeklyEntry} />
         )}
+      </section>
+
+      <section className="section-card">
+        <h2>League activity</h2>
+        <p>Everyone can see submission progress, but never the actual picks.</p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Picks saved</th>
+                <th>Tiebreaker</th>
+              </tr>
+            </thead>
+            <tbody>
+              {completionStatus.map((row) => (
+                <tr key={row.membershipId}>
+                  <td>{row.displayName}</td>
+                  <td>
+                    {row.savedCount}/{row.totalGames}
+                  </td>
+                  <td>{row.hasTiebreaker ? "Saved" : "Not yet"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

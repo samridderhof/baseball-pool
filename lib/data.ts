@@ -10,6 +10,7 @@ import type {
   GameWithPick,
   HistoricalWeekResult,
   Membership,
+  PickCompletionStatus,
   WeeklySlate
 } from "@/lib/types";
 
@@ -73,41 +74,81 @@ export async function getCurrentWeekData() {
   );
 
   const admin = createSupabaseAdminClient();
+  const { data: leagueMemberships } = await admin
+    .from("league_memberships")
+    .select("id, display_name")
+    .eq("league_id", membership.league_id)
+    .order("display_name", { ascending: true });
   const picksPromise =
     games.length > 0
       ? admin
           .from("picks")
           .select("id, membership_id, game_id, picked_team, confidence")
-          .eq("membership_id", membership.id)
           .in(
             "game_id",
             games.map((game) => game.id)
           )
       : Promise.resolve({ data: [], error: null });
 
-  const [{ data: picks }, { data: weeklyEntry }] = await Promise.all([
+  const [{ data: picks }, { data: weeklyEntries }] = await Promise.all([
     picksPromise,
     admin
       .from("weekly_entries")
       .select("id, week_id, membership_id, tiebreak_total_runs")
-      .eq("membership_id", membership.id)
       .eq("week_id", slate.id)
-      .maybeSingle()
+      .in(
+        "membership_id",
+        (leagueMemberships ?? []).map((row) => row.id).length > 0
+          ? (leagueMemberships ?? []).map((row) => row.id)
+          : ["00000000-0000-0000-0000-000000000000"]
+      )
   ]);
 
   const now = Date.now();
+  const myWeeklyEntry =
+    weeklyEntries?.find((entry) => entry.membership_id === membership.id) ?? null;
 
   const gamesWithPicks: GameWithPick[] = games.map((game) => ({
     ...game,
-    pick: picks?.find((pick) => pick.game_id === game.id) ?? null,
+    pick:
+      picks?.find(
+        (pick) => pick.game_id === game.id && pick.membership_id === membership.id
+      ) ?? null,
     locked: new Date(game.starts_at).getTime() <= now
   }));
+
+  const completionStatus: PickCompletionStatus[] = (leagueMemberships ?? []).map(
+    (row) => {
+      const savedCount = new Set(
+        (picks ?? [])
+          .filter((pick) => pick.membership_id === row.id)
+          .map((pick) => pick.game_id)
+      ).size;
+      const hasTiebreaker = Boolean(
+        weeklyEntries?.find(
+          (entry) =>
+            entry.membership_id === row.id &&
+            entry.tiebreak_total_runs !== null &&
+            entry.tiebreak_total_runs !== undefined
+        )
+      );
+
+      return {
+        membershipId: row.id,
+        displayName: row.display_name ?? "Unnamed player",
+        savedCount,
+        totalGames: games.length,
+        hasTiebreaker
+      };
+    }
+  );
 
   return {
     membership,
     slate,
     games: gamesWithPicks,
-    weeklyEntry
+    weeklyEntry: myWeeklyEntry,
+    completionStatus
   };
 }
 

@@ -8,7 +8,8 @@ import { SubmitButton } from "@/components/submit-button";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const { membership, slate, games, weeklyEntry } = await getCurrentWeekData();
+  const { membership, slate, games, weeklyEntry, completionStatus } =
+    await getCurrentWeekData();
   const lockedCount = games.filter((game) => game.locked).length;
   const completedCount = games.filter((game) => game.pick).length;
 
@@ -73,6 +74,33 @@ export default async function DashboardPage() {
               Season standings track total points and every weekly crown.
             </span>
           </div>
+        </div>
+      </section>
+
+      <section className="section-card">
+        <h2>League activity</h2>
+        <p>See who has saved their picks without revealing any actual selections.</p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Picks saved</th>
+                <th>Tiebreaker</th>
+              </tr>
+            </thead>
+            <tbody>
+              {completionStatus.map((row) => (
+                <tr key={row.membershipId}>
+                  <td>{row.displayName}</td>
+                  <td>
+                    {row.savedCount}/{row.totalGames}
+                  </td>
+                  <td>{row.hasTiebreaker ? "Saved" : "Not yet"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
