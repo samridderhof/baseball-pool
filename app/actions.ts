@@ -14,6 +14,16 @@ const loginSchema = z.object({
   next: z.string().optional()
 });
 
+const emailSchema = z.object({
+  email: z.string().email(),
+  next: z.string().optional()
+});
+
+const passwordSchema = z.object({
+  password: z.string().min(8).max(128),
+  next: z.string().optional()
+});
+
 const joinSchema = z.object({
   inviteCode: z.string().min(4),
   displayName: z.string().min(2).max(40)
@@ -114,6 +124,51 @@ export async function signUpWithPasswordAction(formData: FormData) {
       cleanNextPath(parsed.next)
     )}`
   );
+}
+
+export async function requestPasswordResetAction(formData: FormData) {
+  const parsed = emailSchema.parse({
+    email: formData.get("email"),
+    next: formData.get("next") ?? undefined
+  });
+
+  const supabase = await createSupabaseServerClient();
+  const redirectTo = new URL("/auth/callback", env.siteUrl);
+  redirectTo.searchParams.set("next", "/reset-password");
+
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.email, {
+    redirectTo: redirectTo.toString()
+  });
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(
+    `/login?reset=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
+      cleanNextPath(parsed.next)
+    )}`
+  );
+}
+
+export async function updatePasswordAction(formData: FormData) {
+  const parsed = passwordSchema.parse({
+    password: formData.get("password"),
+    next: formData.get("next") ?? undefined
+  });
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.password
+  });
+
+  if (error) {
+    redirect(`/reset-password?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  redirect(cleanNextPath(parsed.next));
 }
 
 export async function joinLeagueAction(formData: FormData) {

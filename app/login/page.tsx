@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  requestPasswordResetAction,
   signInWithPasswordAction,
   signUpWithPasswordAction
 } from "@/app/actions";
@@ -13,6 +14,7 @@ type LoginPageProps = {
     email?: string;
     error?: string;
     next?: string;
+    reset?: string;
   }>;
 };
 
@@ -55,6 +57,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <SubmitButton label="Sign in" pendingLabel="Signing in..." />
         </form>
         {params.error ? <p>{params.error}</p> : null}
+        {params.reset ? (
+          <p>
+            Password reset email sent to <strong>{params.email}</strong>. Open the
+            newest email and follow the link to set your password.
+          </p>
+        ) : null}
       </section>
 
       <section className="section-card">
@@ -101,6 +109,29 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <Link href="/" className="muted">
           Back home
         </Link>
+      </section>
+
+      <section className="section-card">
+        <span className="eyebrow">Already have an account?</span>
+        <h2>Set or reset your password</h2>
+        <p>
+          Existing members who signed up before password login can send themselves
+          a password reset email, then create a password once.
+        </p>
+        <form action={requestPasswordResetAction} className="form-grid">
+          <label className="field">
+            Email address
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              defaultValue={email}
+              required
+            />
+          </label>
+          <input type="hidden" name="next" value={next} />
+          <SubmitButton label="Email me a reset link" pendingLabel="Sending..." />
+        </form>
       </section>
     </div>
   );
