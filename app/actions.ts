@@ -184,29 +184,29 @@ export async function joinLeagueAction(formData: FormData) {
     inviteCode: formData.get("inviteCode"),
     displayName: formData.get("displayName")
   });
+  const admin = createSupabaseAdminClient();
 
-  const supabase = await createSupabaseServerClient();
-  const { data: existingMembership } = await supabase
+  const { data: existingMembership } = await admin
     .from("league_memberships")
     .select("id, league_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: league } = await supabase
+  const { data: league } = await admin
     .from("leagues")
     .select("id")
     .eq("invite_code", parsed.inviteCode)
     .maybeSingle();
 
   if (!league) {
-    redirect("/?error=invite-not-found");
+    redirect(`/invite/${parsed.inviteCode}?error=invite-not-found`);
   }
 
   if (existingMembership && existingMembership.league_id !== league.id) {
-    redirect("/?error=already-in-league");
+    redirect(`/invite/${parsed.inviteCode}?error=already-in-league`);
   }
 
-  const { error } = await supabase.from("league_memberships").upsert(
+  const { error } = await admin.from("league_memberships").upsert(
     {
       user_id: user.id,
       league_id: league.id,
@@ -218,11 +218,12 @@ export async function joinLeagueAction(formData: FormData) {
   );
 
   if (error) {
-    redirect(`/?error=${encodeURIComponent(error.message)}`);
+    redirect(`/invite/${parsed.inviteCode}?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/");
   revalidatePath("/dashboard");
+  revalidatePath(`/invite/${parsed.inviteCode}`);
   redirect("/dashboard");
 }
 

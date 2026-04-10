@@ -9,10 +9,19 @@ type InvitePageProps = {
   params: Promise<{
     code: string;
   }>;
+  searchParams: Promise<{
+    error?: string;
+  }>;
 };
 
-export default async function InvitePage({ params }: InvitePageProps) {
+const inviteErrors: Record<string, string> = {
+  "invite-not-found": "This invite link is invalid or expired.",
+  "already-in-league": "This account is already tied to another league."
+};
+
+export default async function InvitePage({ params, searchParams }: InvitePageProps) {
   const { code } = await params;
+  const query = await searchParams;
   const user = await getCurrentUser();
   const league = await getLeagueByInviteCode(code);
 
@@ -39,6 +48,12 @@ export default async function InvitePage({ params }: InvitePageProps) {
           invite, one league, all season long.
         </p>
       </section>
+
+      {query.error ? (
+        <section className="section-card">
+          <strong>{inviteErrors[query.error] ?? query.error}</strong>
+        </section>
+      ) : null}
 
       {!user ? (
         <section className="section-card">
