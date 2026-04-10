@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const hasSession = cookieStore
-    .getAll()
-    .some((cookie) => cookie.name.startsWith("sb-"));
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  const hasSession = Boolean(user);
 
   return (
     <html lang="en">
