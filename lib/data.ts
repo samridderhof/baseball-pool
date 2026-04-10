@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { getActiveSaturday } from "@/lib/dates";
 import { syncSaturdaySlate } from "@/lib/mlb";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { buildSeasonStandings, buildWeeklyStandingsForWeek } from "@/lib/scoring";
 import type { GameWithPick, Membership, WeeklySlate } from "@/lib/types";
@@ -27,8 +28,8 @@ export async function requireUser() {
 }
 
 export async function getMembershipForUser(userId: string) {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
     .from("league_memberships")
     .select("id, league_id, user_id, display_name")
     .eq("user_id", userId)
