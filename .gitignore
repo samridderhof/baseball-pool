@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# next.js build output
+.next/
+out/
+
+# local environment files
+.env.local
+.env.*.local
+
+# local tooling
+.tools/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# typescript
+tsconfig.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# local source images not needed in repo once copied into public/
+photos/
