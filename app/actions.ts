@@ -105,13 +105,16 @@ export async function signUpWithPasswordAction(formData: FormData) {
     password: formData.get("password"),
     next: formData.get("next") ?? undefined
   });
+  const nextPath = cleanNextPath(parsed.next);
 
   const supabase = await createSupabaseServerClient();
+  const redirectTo = new URL("/auth/callback", env.siteUrl);
+  redirectTo.searchParams.set("next", nextPath);
   const { error } = await supabase.auth.signUp({
     email: parsed.email,
     password: parsed.password,
     options: {
-      emailRedirectTo: new URL("/auth/callback", env.siteUrl).toString()
+      emailRedirectTo: redirectTo.toString()
     }
   });
 
@@ -121,7 +124,7 @@ export async function signUpWithPasswordAction(formData: FormData) {
 
   redirect(
     `/login?created=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
-      cleanNextPath(parsed.next)
+      nextPath
     )}`
   );
 }
