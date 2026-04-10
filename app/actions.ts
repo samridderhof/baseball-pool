@@ -10,12 +10,7 @@ import { env } from "@/lib/env";
 
 const loginSchema = z.object({
   email: z.string().email(),
-  next: z.string().optional()
-});
-
-const verifyCodeSchema = z.object({
-  email: z.string().email(),
-  token: z.string().trim().min(6).max(6),
+  password: z.string().min(8).max(128),
   next: z.string().optional()
 });
 
@@ -74,18 +69,39 @@ function cleanNextPath(nextPath: string | undefined) {
   return nextPath;
 }
 
-export async function requestEmailCodeAction(formData: FormData) {
+export async function signInWithPasswordAction(formData: FormData) {
   const parsed = loginSchema.parse({
     email: formData.get("email"),
+    password: formData.get("password"),
     next: formData.get("next") ?? undefined
   });
 
   const supabase = await createSupabaseServerClient();
-
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email: parsed.email,
+    password: parsed.password
+  });
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(cleanNextPath(parsed.next));
+}
+
+export async function signUpWithPasswordAction(formData: FormData) {
+  const parsed = loginSchema.parse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    next: formData.get("next") ?? undefined
+  });
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signUp({
+    email: parsed.email,
+    password: parsed.password,
     options: {
-      shouldCreateUser: true
+      emailRedirectTo: new URL("/auth/callback", env.siteUrl).toString()
     }
   });
 
@@ -94,35 +110,10 @@ export async function requestEmailCodeAction(formData: FormData) {
   }
 
   redirect(
-    `/login?sent=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
+    `/login?created=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
       cleanNextPath(parsed.next)
     )}`
   );
-}
-
-export async function verifyEmailCodeAction(formData: FormData) {
-  const parsed = verifyCodeSchema.parse({
-    email: formData.get("email"),
-    token: formData.get("token"),
-    next: formData.get("next") ?? undefined
-  });
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.verifyOtp({
-    email: parsed.email,
-    token: parsed.token,
-    type: "email"
-  });
-
-  if (error) {
-    redirect(
-      `/login?sent=1&email=${encodeURIComponent(parsed.email)}&next=${encodeURIComponent(
-        cleanNextPath(parsed.next)
-      )}&error=${encodeURIComponent(error.message)}`
-    );
-  }
-
-  redirect(cleanNextPath(parsed.next));
 }
 
 export async function joinLeagueAction(formData: FormData) {

@@ -5,7 +5,7 @@ Private weekly MLB confidence pool built with Next.js + Supabase.
 ## What this ships in v1
 
 - Invite-only join flow for one private league per user
-- Email magic-link auth with Supabase
+- Email/password auth with Supabase
 - Saturday MLB slate sync from the public MLB Stats API
 - Winner picks plus confidence values from `1..N`
 - Tiebreaker on total runs in the last Saturday game
@@ -54,3 +54,4 @@ Private weekly MLB confidence pool built with Next.js + Supabase.
 - The sync uses the Supabase service role on the server so it can upsert slate and game data safely.
 - Users can still update unlocked games later in the day; locked games stay frozen.
 - Weekly winners are derived from points first, then closest tiebreak total.
+- `vercel.json` includes a daily keep-alive cron hitting `/api/keep-alive` to reduce inactivity risk on low-traffic weeks.
