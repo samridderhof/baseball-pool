@@ -144,21 +144,21 @@ export async function savePicksAction(formData: FormData) {
   const { membership } = await requireMembership();
   const weekId = z.string().uuid().parse(formData.get("weekId"));
   const tiebreakValue = z.coerce.number().int().min(0).max(99).parse(formData.get("tiebreak"));
-  const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
 
   const [{ data: slate }, { data: games }, { data: currentPicks }] = await Promise.all([
-    supabase
+    admin
       .from("weekly_slates")
       .select("id, league_id")
       .eq("id", weekId)
       .eq("league_id", membership.league_id)
       .single(),
-    supabase
+    admin
       .from("games")
       .select("id, starts_at, away_team, home_team")
       .eq("week_id", weekId)
       .order("sort_order", { ascending: true }),
-    supabase
+    admin
       .from("picks")
       .select("id, membership_id, game_id, picked_team, confidence")
       .eq("membership_id", membership.id)
@@ -231,7 +231,7 @@ export async function savePicksAction(formData: FormData) {
   }
 
   if (parsedSubmitted.length > 0) {
-    const { error } = await supabase.from("picks").upsert(parsedSubmitted, {
+    const { error } = await admin.from("picks").upsert(parsedSubmitted, {
       onConflict: "membership_id,game_id"
     });
 
@@ -240,7 +240,7 @@ export async function savePicksAction(formData: FormData) {
     }
   }
 
-  const { error: weeklyEntryError } = await supabase.from("weekly_entries").upsert(
+  const { error: weeklyEntryError } = await admin.from("weekly_entries").upsert(
     {
       membership_id: membership.id,
       week_id: weekId,
