@@ -110,7 +110,7 @@ export async function signUpWithPasswordAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const redirectTo = new URL("/auth/callback", env.siteUrl);
   redirectTo.searchParams.set("next", nextPath);
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.email,
     password: parsed.password,
     options: {
@@ -120,6 +120,10 @@ export async function signUpWithPasswordAction(formData: FormData) {
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data.session) {
+    redirect(nextPath);
   }
 
   redirect(
