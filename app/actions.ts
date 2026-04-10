@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireMembership, requireUser } from "@/lib/data";
 import { env } from "@/lib/env";
@@ -16,6 +17,48 @@ const joinSchema = z.object({
   inviteCode: z.string().min(4),
   displayName: z.string().min(2).max(40)
 });
+
+const importRowSchema = z.object({
+  week: z.coerce.number().int().positive(),
+  player: z.string().min(1),
+  correct_picks: z.coerce.number().int().min(0).nullable(),
+  points: z.coerce.number().int(),
+  cash_delta: z.coerce.number().int()
+});
+
+function normalizeImportKey(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseHistoricalCsv(csvText: string) {
+  const rows = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (rows.length < 2) {
+    throw new Error("Add a header row and at least one historical result row.");
+  }
+
+  const header = rows[0].split(",").map((column) => column.trim().toLowerCase());
+  const expected = ["week", "player", "correct_picks", "points", "cash_delta"];
+
+  if (expected.some((column, index) => header[index] !== column)) {
+    throw new Error("CSV must start with: week,player,correct_picks,points,cash_delta");
+  }
+
+  return rows.slice(1).map((line) => {
+    const columns = line.split(",").map((column) => column.trim());
+
+    return importRowSchema.parse({
+      week: columns[0],
+      player: columns[1],
+      correct_picks: columns[2] === "" ? null : columns[2],
+      points: columns[3],
+      cash_delta: columns[4]
+    });
+  });
+}
 
 function cleanNextPath(nextPath: string | undefined) {
   if (!nextPath || !nextPath.startsWith("/")) {
@@ -222,4 +265,89 @@ export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+export async function saveImportLabelsAction(formData: FormData) {
+  const { membership } = await requireMembership();
+  const admin = createSupabaseAdminClient();
+  const { data: memberships } = await admin
+    .from("league_memberships")
+    .select("id")
+    .eq("league_id", membership.league_id);
+
+  for (const row of memberships ?? []) {
+    const importLabel = formData.get(`importLabel:${row.id}`)?.toString().trim() ?? "";
+
+    await admin
+      .from("league_memberships")
+      .update({
+        import_label: importLabel.length > 0 ? importLabel : null
+      })
+      .eq("id", row.id)
+      .eq("league_id", membership.league_id);
+  }
+
+  revalidatePath("/history-import");
+  revalidatePath("/standings");
+  redirect("/history-import?saved=labels");
+}
+
+export async function importHistoricalResultsAction(formData: FormData) {
+  try {
+    const { membership } = await requireMembership();
+    const csvText = formData.get("historicalCsv")?.toString() ?? "";
+    const rows = parseHistoricalCsv(csvText);
+    const admin = createSupabaseAdminClient();
+    const { data: memberships } = await admin
+      .from("league_memberships")
+      .select("id, display_name, import_label")
+      .eq("league_id", membership.league_id);
+
+    const membershipMap = new Map<string, string>();
+
+    (memberships ?? []).forEach((row) => {
+      if (row.display_name) {
+        membershipMap.set(normalizeImportKey(row.display_name), row.id);
+      }
+      if (row.import_label) {
+        membershipMap.set(normalizeImportKey(row.import_label), row.id);
+      }
+    });
+
+    const payload = rows.map((row) => {
+      const membershipId = membershipMap.get(normalizeImportKey(row.player));
+
+      if (!membershipId) {
+        throw new Error(
+          `No league member matches "${row.player}". Add or update an import label first.`
+        );
+      }
+
+      return {
+        league_id: membership.league_id,
+        week_number: row.week,
+        membership_id: membershipId,
+        correct_picks: row.correct_picks,
+        points: row.points,
+        cash_delta: row.cash_delta,
+        source_label: row.player
+      };
+    });
+
+    const { error } = await admin.from("historical_week_results").upsert(payload, {
+      onConflict: "league_id,week_number,membership_id"
+    });
+
+    if (error) {
+      redirect(`/history-import?error=${encodeURIComponent(error.message)}`);
+    }
+
+    revalidatePath("/history-import");
+    revalidatePath("/standings");
+    redirect(`/history-import?saved=history&rows=${payload.length}`);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Historical import failed.";
+    redirect(`/history-import?error=${encodeURIComponent(message)}`);
+  }
 }

@@ -5,8 +5,13 @@ import { getActiveSaturday } from "@/lib/dates";
 import { syncSaturdaySlate } from "@/lib/mlb";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { buildSeasonStandings, buildWeeklyStandingsForWeek } from "@/lib/scoring";
-import type { GameWithPick, Membership, WeeklySlate } from "@/lib/types";
+import { buildStandingsSnapshot } from "@/lib/scoring";
+import type {
+  GameWithPick,
+  HistoricalWeekResult,
+  Membership,
+  WeeklySlate
+} from "@/lib/types";
 
 export async function getCurrentUser() {
   const supabase = await createSupabaseServerClient();
@@ -31,21 +36,11 @@ export async function getMembershipForUser(userId: string) {
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from("league_memberships")
-    .select("id, league_id, user_id, display_name")
+    .select("id, league_id, user_id, display_name, import_label")
     .eq("user_id", userId)
     .maybeSingle();
 
   return data as Membership | null;
-}
-
-export async function getAuthDebugState() {
-  const user = await getCurrentUser();
-  const membership = user ? await getMembershipForUser(user.id) : null;
-
-  return {
-    user,
-    membership
-  };
 }
 
 export async function requireMembership() {
@@ -119,56 +114,74 @@ export async function getCurrentWeekData() {
 export async function getStandingsData() {
   const { membership } = await requireMembership();
   await syncSaturdaySlate(membership.league_id, getActiveSaturday());
-  const supabase = await createSupabaseServerClient();
-  const { data: weeks } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data: weeks } = await admin
     .from("weekly_slates")
     .select("id, league_id, saturday_date, status, tiebreak_game_id")
     .eq("league_id", membership.league_id)
     .order("saturday_date", { ascending: false });
   const weekIds = weeks?.map((week) => week.id) ?? [];
-  const { data: memberships } = await supabase
+  const { data: memberships } = await admin
     .from("league_memberships")
-    .select("id, league_id, user_id, display_name")
+    .select("id, league_id, user_id, display_name, import_label")
     .eq("league_id", membership.league_id)
     .order("display_name", { ascending: true });
-  const { data: games } = await supabase
+  const { data: games } = await admin
     .from("games")
     .select("*")
     .in("week_id", weekIds.length > 0 ? weekIds : ["00000000-0000-0000-0000-000000000000"]);
-  const { data: picks } = await supabase
+  const { data: picks } = await admin
     .from("picks")
     .select("id, membership_id, game_id, picked_team, confidence");
-  const { data: weeklyEntries } = await supabase
+  const { data: weeklyEntries } = await admin
     .from("weekly_entries")
     .select("id, week_id, membership_id, tiebreak_total_runs");
+  const { data: historicalResults } = await admin
+    .from("historical_week_results")
+    .select("id, league_id, week_number, membership_id, correct_picks, points, cash_delta, source_label")
+    .eq("league_id", membership.league_id)
+    .order("week_number", { ascending: true });
 
   const weekList = (weeks ?? []) as WeeklySlate[];
   const membershipList = (memberships ?? []) as Membership[];
   const gameList = (games ?? []) as any[];
   const pickList = (picks ?? []) as any[];
   const entryList = (weeklyEntries ?? []) as any[];
+  const historicalList = (historicalResults ?? []) as HistoricalWeekResult[];
 
-  const seasonStandings = buildSeasonStandings({
+  const snapshot = buildStandingsSnapshot({
     memberships: membershipList,
     weeks: weekList,
     games: gameList,
     picks: pickList,
-    weeklyEntries: entryList
+    weeklyEntries: entryList,
+    historicalResults: historicalList
   });
 
-  const weeklyStandings = weekList.map((week) => ({
-    week,
-    standings: buildWeeklyStandingsForWeek(
-      week,
-      membershipList,
-      gameList,
-      pickList,
-      entryList
-    )
-  }));
+  return {
+    seasonStandings: snapshot.seasonStandings,
+    weeklyStandings: snapshot.weeklyStandings,
+    weekNumbers: snapshot.weekNumbers
+  };
+}
+
+export async function getHistoricalImportData() {
+  const { membership } = await requireMembership();
+  const admin = createSupabaseAdminClient();
+  const { data: memberships } = await admin
+    .from("league_memberships")
+    .select("id, league_id, user_id, display_name, import_label")
+    .eq("league_id", membership.league_id)
+    .order("display_name", { ascending: true });
+  const { data: historicalResults } = await admin
+    .from("historical_week_results")
+    .select("id, league_id, week_number, membership_id, correct_picks, points, cash_delta, source_label")
+    .eq("league_id", membership.league_id)
+    .order("week_number", { ascending: true });
 
   return {
-    seasonStandings,
-    weeklyStandings
+    membership,
+    memberships: (memberships ?? []) as Membership[],
+    historicalResults: (historicalResults ?? []) as HistoricalWeekResult[]
   };
 }

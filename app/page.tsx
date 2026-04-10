@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { getAuthDebugState, getCurrentUser, getMembershipForUser } from "@/lib/data";
+import { getCurrentUser, getMembershipForUser } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +19,6 @@ const errorMessages: Record<string, string> = {
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const user = await getCurrentUser();
-  const authDebug = await getAuthDebugState();
-  const headerStore = await headers();
-  const host = headerStore.get("host");
 
   if (user) {
     const membership = await getMembershipForUser(user.id);
@@ -60,30 +56,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <strong>{errorMessages[params.error] ?? "Something went wrong."}</strong>
         </section>
       ) : null}
-
-      <section className="section-card">
-        <h2>Debug status</h2>
-        <div className="info-grid">
-          <div className="info-card">
-            <strong>Host</strong>
-            <span className="muted">{host ?? "unknown"}</span>
-          </div>
-          <div className="info-card">
-            <strong>User</strong>
-            <span className="muted">
-              {authDebug.user?.email ?? "No authenticated user"}
-            </span>
-          </div>
-          <div className="info-card">
-            <strong>Membership</strong>
-            <span className="muted">
-              {authDebug.membership
-                ? `${authDebug.membership.display_name} (${authDebug.membership.id})`
-                : "No membership found"}
-            </span>
-          </div>
-        </div>
-      </section>
 
       <section className="section-card">
         <h2>How v1 works</h2>

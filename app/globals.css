@@ -41,7 +41,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -71,6 +72,18 @@ select {
   gap: 14px;
   color: var(--muted);
   font-weight: 600;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.text-link {
+  color: var(--brand);
+  font-weight: 700;
 }
 
 .page-grid {
@@ -241,12 +254,19 @@ select {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   min-height: 48px;
   padding: 0 14px;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: white;
+}
+
+.field textarea {
+  min-height: 240px;
+  padding-block: 12px;
+  resize: vertical;
 }
 
 .game-card {

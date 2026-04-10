@@ -32,6 +32,22 @@ Private weekly MLB confidence pool built with Next.js + Supabase.
 5. Install dependencies with `npm install`.
 6. Start the app with `npm run dev`.
 
+## Historical imports
+
+- Existing Supabase projects should also run `supabase/history-upgrade.sql`.
+- Members can set import labels and paste normalized CSV rows at `/history-import`.
+- Expected CSV format:
+  - `week,player,correct_picks,points,cash_delta`
+- Example:
+  - `1,SAM,9,79,-10`
+  - `1,FRANK O,11,95,120`
+
+## Spreadsheet conversion helper
+
+- To convert the existing Excel tracker into import-ready CSV:
+  - `python scripts/export_history_csv.py "C:\path\to\Baseball Pool 2026.xlsx"`
+- The script writes a `.history.csv` file beside the workbook.
+
 ## Notes
 
 - The app syncs the current Saturday slate on demand when authenticated pages load.

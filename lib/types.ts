@@ -10,6 +10,7 @@ export type Membership = {
   league_id: string;
   user_id: string;
   display_name: string | null;
+  import_label: string | null;
 };
 
 export type WeeklySlate = {
@@ -62,6 +63,7 @@ export type WeeklyStanding = {
   tiebreakPrediction: number | null;
   tiebreakDiff: number | null;
   isWinner: boolean;
+  cashDelta: number;
 };
 
 export type SeasonStanding = {
@@ -69,4 +71,25 @@ export type SeasonStanding = {
   displayName: string;
   seasonPoints: number;
   weeklyWins: number;
+  cashTotal: number;
+  weekPoints: Record<number, number | null>;
+};
+
+export type HistoricalWeekResult = {
+  id: string;
+  league_id: string;
+  week_number: number;
+  membership_id: string;
+  correct_picks: number | null;
+  points: number;
+  cash_delta: number;
+  source_label: string | null;
+};
+
+export type WeeklyStandingsGroup = {
+  weekNumber: number;
+  label: string;
+  source: "historical" | "live";
+  saturdayDate: string | null;
+  standings: WeeklyStanding[];
 };
