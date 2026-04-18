@@ -86,6 +86,10 @@ textarea {
   font-weight: 700;
 }
 
+.matrix-callout {
+  margin: 8px 0 0;
+}
+
 .page-grid {
   display: grid;
   gap: 20px;
@@ -326,6 +330,12 @@ th {
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.best-week-cell {
+  background: rgba(211, 107, 44, 0.14);
+  color: var(--brand-strong);
+  font-weight: 800;
 }
 
 .week-block {

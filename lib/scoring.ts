@@ -1,4 +1,5 @@
 import type {
+  BestWeekScore,
   Game,
   HistoricalWeekResult,
   Membership,
@@ -188,6 +189,7 @@ function buildLiveWeeklyGroups(input: ScoreInput, startingWeekNumber: number) {
 }
 
 export function buildStandingsSnapshot(input: ScoreInput): {
+  bestWeekScores: BestWeekScore[];
   seasonStandings: SeasonStanding[];
   weeklyStandings: WeeklyStandingsGroup[];
   weekNumbers: number[];
@@ -203,6 +205,8 @@ export function buildStandingsSnapshot(input: ScoreInput): {
   const seasonPoints = new Map<string, number>();
   const cashTotals = new Map<string, number>();
   const weekPointsByMembership = new Map<string, Record<number, number | null>>();
+  let bestWeekPoints = Number.NEGATIVE_INFINITY;
+  const bestWeekScores: BestWeekScore[] = [];
 
   weeklyStandings.forEach((group) => {
     group.standings.forEach((standing) => {
@@ -224,6 +228,27 @@ export function buildStandingsSnapshot(input: ScoreInput): {
       const existing = weekPointsByMembership.get(standing.membershipId) ?? {};
       existing[group.weekNumber] = standing.points;
       weekPointsByMembership.set(standing.membershipId, existing);
+
+      if (standing.points > bestWeekPoints) {
+        bestWeekPoints = standing.points;
+        bestWeekScores.length = 0;
+        bestWeekScores.push({
+          membershipId: standing.membershipId,
+          displayName: standing.displayName,
+          weekNumber: group.weekNumber,
+          points: standing.points
+        });
+      } else if (
+        standing.points === bestWeekPoints &&
+        Number.isFinite(bestWeekPoints)
+      ) {
+        bestWeekScores.push({
+          membershipId: standing.membershipId,
+          displayName: standing.displayName,
+          weekNumber: group.weekNumber,
+          points: standing.points
+        });
+      }
     });
   });
 
@@ -249,6 +274,7 @@ export function buildStandingsSnapshot(input: ScoreInput): {
     });
 
   return {
+    bestWeekScores,
     seasonStandings,
     weeklyStandings,
     weekNumbers: weeklyStandings.map((group) => group.weekNumber)

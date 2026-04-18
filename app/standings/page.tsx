@@ -6,7 +6,20 @@ import { parseSaturdayKey } from "@/lib/dates";
 export const dynamic = "force-dynamic";
 
 export default async function StandingsPage() {
-  const { seasonStandings, weeklyStandings, weekNumbers } = await getStandingsData();
+  const { bestWeekScores, seasonStandings, weeklyStandings, weekNumbers } =
+    await getStandingsData();
+  const bestWeekKeySet = new Set(
+    bestWeekScores.map((score) => `${score.membershipId}:${score.weekNumber}`)
+  );
+  const bestWeekSummary =
+    bestWeekScores.length === 0
+      ? null
+      : bestWeekScores
+          .map(
+            (score) =>
+              `${score.displayName} in W${score.weekNumber} with ${score.points} points`
+          )
+          .join(" | ");
 
   return (
     <div className="page-grid">
@@ -39,7 +52,14 @@ export default async function StandingsPage() {
 
       <section className="section-card">
         <div className="section-head">
-          <h2>Season matrix</h2>
+          <div>
+            <h2>Season matrix</h2>
+            {bestWeekSummary ? (
+              <p className="matrix-callout">
+                Best single week: <strong>{bestWeekSummary}</strong>
+              </p>
+            ) : null}
+          </div>
           <Link href="/history-import" className="text-link">
             Import historical weeks
           </Link>
@@ -65,7 +85,16 @@ export default async function StandingsPage() {
                   <tr key={row.membershipId}>
                     <td>{row.displayName}</td>
                     {weekNumbers.map((weekNumber) => (
-                      <td key={weekNumber}>{row.weekPoints[weekNumber] ?? "-"}</td>
+                      <td
+                        key={weekNumber}
+                        className={
+                          bestWeekKeySet.has(`${row.membershipId}:${weekNumber}`)
+                            ? "best-week-cell"
+                            : undefined
+                        }
+                      >
+                        {row.weekPoints[weekNumber] ?? "-"}
+                      </td>
                     ))}
                     <td>{row.seasonPoints}</td>
                     <td>{row.weeklyWins}</td>

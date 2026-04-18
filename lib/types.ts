@@ -75,6 +75,13 @@ export type SeasonStanding = {
   weekPoints: Record<number, number | null>;
 };
 
+export type BestWeekScore = {
+  membershipId: string;
+  displayName: string;
+  weekNumber: number;
+  points: number;
+};
+
 export type HistoricalWeekResult = {
   id: string;
   league_id: string;

@@ -200,6 +200,7 @@ export async function getStandingsData() {
   });
 
   return {
+    bestWeekScores: snapshot.bestWeekScores,
     seasonStandings: snapshot.seasonStandings,
     weeklyStandings: snapshot.weeklyStandings,
     weekNumbers: snapshot.weekNumbers
