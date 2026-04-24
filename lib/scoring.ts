@@ -203,6 +203,7 @@ export function buildStandingsSnapshot(input: ScoreInput): {
   const weeklyStandings = [...historicalGroups, ...liveGroups];
   const winCounts = new Map<string, number>();
   const seasonPoints = new Map<string, number>();
+  const seasonCorrectPicks = new Map<string, number>();
   const cashTotals = new Map<string, number>();
   const weekPointsByMembership = new Map<string, Record<number, number | null>>();
   let bestWeekPoints = Number.NEGATIVE_INFINITY;
@@ -213,6 +214,10 @@ export function buildStandingsSnapshot(input: ScoreInput): {
       seasonPoints.set(
         standing.membershipId,
         (seasonPoints.get(standing.membershipId) ?? 0) + standing.points
+      );
+      seasonCorrectPicks.set(
+        standing.membershipId,
+        (seasonCorrectPicks.get(standing.membershipId) ?? 0) + standing.correctPicks
       );
       cashTotals.set(
         standing.membershipId,
@@ -257,6 +262,7 @@ export function buildStandingsSnapshot(input: ScoreInput): {
       membershipId: membership.id,
       displayName: membership.display_name ?? "Unnamed player",
       seasonPoints: seasonPoints.get(membership.id) ?? 0,
+      seasonCorrectPicks: seasonCorrectPicks.get(membership.id) ?? 0,
       weeklyWins: winCounts.get(membership.id) ?? 0,
       cashTotal: cashTotals.get(membership.id) ?? 0,
       weekPoints: weekPointsByMembership.get(membership.id) ?? {}
@@ -264,6 +270,10 @@ export function buildStandingsSnapshot(input: ScoreInput): {
     .sort((left, right) => {
       if (right.seasonPoints !== left.seasonPoints) {
         return right.seasonPoints - left.seasonPoints;
+      }
+
+      if (right.seasonCorrectPicks !== left.seasonCorrectPicks) {
+        return right.seasonCorrectPicks - left.seasonCorrectPicks;
       }
 
       if (right.weeklyWins !== left.weeklyWins) {

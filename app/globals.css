@@ -338,6 +338,18 @@ th {
   font-weight: 800;
 }
 
+.week-winner-cell {
+  background: rgba(15, 92, 77, 0.12);
+  color: var(--brand-strong);
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(15, 92, 77, 0.18);
+}
+
+.week-winner-cell.best-week-cell {
+  background:
+    linear-gradient(135deg, rgba(15, 92, 77, 0.14), rgba(211, 107, 44, 0.18));
+}
+
 .week-block {
   padding-top: 8px;
   border-top: 1px solid var(--line);

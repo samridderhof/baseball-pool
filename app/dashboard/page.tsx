@@ -8,10 +8,19 @@ import { SubmitButton } from "@/components/submit-button";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const { membership, slate, games, weeklyEntry, completionStatus } =
+  const {
+    membership,
+    slate,
+    games,
+    weeklyEntry,
+    completionStatus,
+    currentWeekLeaderboard,
+    livePickRevealGames
+  } =
     await getCurrentWeekData();
   const lockedCount = games.filter((game) => game.locked).length;
   const completedCount = games.filter((game) => game.pick).length;
+  const hasLockedGames = livePickRevealGames.some((game) => game.locked);
 
   return (
     <div className="page-grid">
@@ -79,7 +88,10 @@ export default async function DashboardPage() {
 
       <section className="section-card">
         <h2>League activity</h2>
-        <p>See who has saved their picks without revealing any actual selections.</p>
+        <p>
+          See who has saved their picks before first pitch. Locked games reveal
+          picks and confidence publicly once they go live.
+        </p>
         <div className="table-wrap">
           <table>
             <thead>
@@ -102,6 +114,105 @@ export default async function DashboardPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="section-card">
+        <h2>Live Saturday leaderboard</h2>
+        <p>
+          Once a game locks, everyone can see the pick and confidence tied to that
+          matchup. Season totals stay visible alongside the live week race.
+        </p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Live points</th>
+                <th>Live correct</th>
+                <th>Season points</th>
+                <th>Season correct</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentWeekLeaderboard.map((row) => (
+                <tr key={row.membershipId}>
+                  <td>{row.displayName}</td>
+                  <td>{row.livePoints}</td>
+                  <td>{row.liveCorrectPicks}</td>
+                  <td>{row.seasonPoints}</td>
+                  <td>{row.seasonCorrectPicks}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="section-card">
+        <h2>Locked game pick reveals</h2>
+        <p>
+          Games stay private until first pitch. After lock, every submitted pick and
+          confidence number for that game is visible here.
+        </p>
+        {!hasLockedGames ? (
+          <div className="empty">
+            No games have locked yet for {format(parseSaturdayKey(slate.saturday_date), "MMMM d, yyyy")}.
+          </div>
+        ) : (
+          <div className="game-list">
+            {livePickRevealGames.map((game) => (
+              <div key={game.gameId} className="week-block">
+                <div className="section-head">
+                  <div>
+                    <h3>
+                      {game.awayTeam} at {game.homeTeam}
+                    </h3>
+                    <p className="matrix-callout">
+                      {format(new Date(game.startsAt), "EEE h:mm a")} | {game.status}
+                    </p>
+                  </div>
+                  <span className={`pill${game.locked ? " locked" : ""}`}>
+                    {game.locked ? "Revealed" : "Hidden until lock"}
+                  </span>
+                </div>
+                {game.locked ? (
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Player</th>
+                          <th>Pick</th>
+                          <th>Confidence</th>
+                          <th>Result</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {game.reveals.map((reveal) => (
+                          <tr key={reveal.membershipId}>
+                            <td>{reveal.displayName}</td>
+                            <td>{reveal.pickedTeam}</td>
+                            <td>{reveal.confidence}</td>
+                            <td>
+                              {game.winnerTeam
+                                ? reveal.pickedTeam === game.winnerTeam
+                                  ? "Correct"
+                                  : "Miss"
+                                : "Pending"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="empty">
+                    Picks for this game will appear automatically at first pitch.
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="section-card">

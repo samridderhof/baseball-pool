@@ -11,6 +11,13 @@ export default async function StandingsPage() {
   const bestWeekKeySet = new Set(
     bestWeekScores.map((score) => `${score.membershipId}:${score.weekNumber}`)
   );
+  const weekWinnerKeySet = new Set(
+    weeklyStandings.flatMap((group) =>
+      group.standings
+        .filter((row) => row.isWinner)
+        .map((row) => `${row.membershipId}:${group.weekNumber}`)
+    )
+  );
   const bestWeekSummary =
     bestWeekScores.length === 0
       ? null
@@ -32,6 +39,7 @@ export default async function StandingsPage() {
               <tr>
                 <th>Player</th>
                 <th>Season points</th>
+                <th>Correct picks</th>
                 <th>Weekly wins</th>
                 <th>$ total</th>
               </tr>
@@ -41,6 +49,7 @@ export default async function StandingsPage() {
                 <tr key={row.membershipId}>
                   <td>{row.displayName}</td>
                   <td>{row.seasonPoints}</td>
+                  <td>{row.seasonCorrectPicks}</td>
                   <td>{row.weeklyWins}</td>
                   <td>{row.cashTotal >= 0 ? `+${row.cashTotal}` : row.cashTotal}</td>
                 </tr>
@@ -76,6 +85,7 @@ export default async function StandingsPage() {
                     <th key={weekNumber}>W{weekNumber}</th>
                   ))}
                   <th>Total</th>
+                  <th>Correct</th>
                   <th>Wins</th>
                   <th>$</th>
                 </tr>
@@ -87,16 +97,22 @@ export default async function StandingsPage() {
                     {weekNumbers.map((weekNumber) => (
                       <td
                         key={weekNumber}
-                        className={
+                        className={[
+                          weekWinnerKeySet.has(`${row.membershipId}:${weekNumber}`)
+                            ? "week-winner-cell"
+                            : "",
                           bestWeekKeySet.has(`${row.membershipId}:${weekNumber}`)
                             ? "best-week-cell"
-                            : undefined
-                        }
+                            : ""
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || undefined}
                       >
                         {row.weekPoints[weekNumber] ?? "-"}
                       </td>
                     ))}
                     <td>{row.seasonPoints}</td>
+                    <td>{row.seasonCorrectPicks}</td>
                     <td>{row.weeklyWins}</td>
                     <td>{row.cashTotal >= 0 ? `+${row.cashTotal}` : row.cashTotal}</td>
                   </tr>

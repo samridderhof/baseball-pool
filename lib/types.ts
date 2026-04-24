@@ -70,6 +70,7 @@ export type SeasonStanding = {
   membershipId: string;
   displayName: string;
   seasonPoints: number;
+  seasonCorrectPicks: number;
   weeklyWins: number;
   cashTotal: number;
   weekPoints: Record<number, number | null>;
@@ -107,4 +108,31 @@ export type PickCompletionStatus = {
   savedCount: number;
   totalGames: number;
   hasTiebreaker: boolean;
+};
+
+export type CurrentWeekLeaderboardRow = {
+  membershipId: string;
+  displayName: string;
+  livePoints: number;
+  liveCorrectPicks: number;
+  seasonPoints: number;
+  seasonCorrectPicks: number;
+};
+
+export type LockedPickReveal = {
+  membershipId: string;
+  displayName: string;
+  pickedTeam: string;
+  confidence: number;
+};
+
+export type LivePickRevealGame = {
+  gameId: string;
+  awayTeam: string;
+  homeTeam: string;
+  startsAt: string;
+  status: string;
+  locked: boolean;
+  winnerTeam: string | null;
+  reveals: LockedPickReveal[];
 };
