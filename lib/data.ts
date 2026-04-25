@@ -1,7 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { getActiveSaturday } from "@/lib/dates";
+import { getActiveSaturday, getCurrentDateKey, parseSaturdayKey } from "@/lib/dates";
 import { syncSaturdaySlate } from "@/lib/mlb";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -71,11 +71,31 @@ export async function getLeagueByInviteCode(inviteCode: string) {
   return data;
 }
 
+async function getSlateDateToSync(leagueId: string) {
+  const admin = createSupabaseAdminClient();
+  const todayKey = getCurrentDateKey();
+  const { data: openSlate } = await admin
+    .from("weekly_slates")
+    .select("saturday_date")
+    .eq("league_id", leagueId)
+    .neq("status", "final")
+    .lte("saturday_date", todayKey)
+    .order("saturday_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (openSlate?.saturday_date) {
+    return parseSaturdayKey(openSlate.saturday_date);
+  }
+
+  return getActiveSaturday();
+}
+
 export async function getCurrentWeekData() {
   const { membership } = await requireMembership();
   const { slate, games } = await syncSaturdaySlate(
     membership.league_id,
-    getActiveSaturday()
+    await getSlateDateToSync(membership.league_id)
   );
 
   const admin = createSupabaseAdminClient();
@@ -293,7 +313,10 @@ export async function getCurrentWeekData() {
 
 export async function getStandingsData() {
   const { membership } = await requireMembership();
-  await syncSaturdaySlate(membership.league_id, getActiveSaturday());
+  await syncSaturdaySlate(
+    membership.league_id,
+    await getSlateDateToSync(membership.league_id)
+  );
   const admin = createSupabaseAdminClient();
   const { data: weeks } = await admin
     .from("weekly_slates")

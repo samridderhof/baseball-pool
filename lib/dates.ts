@@ -29,6 +29,13 @@ function getZonedParts(reference: Date, timeZone = EASTERN_TIMEZONE) {
   };
 }
 
+export function getCurrentDateKey(reference = new Date()) {
+  const zoned = getZonedParts(reference);
+  return `${zoned.year.toString().padStart(4, "0")}-${zoned.month
+    .toString()
+    .padStart(2, "0")}-${zoned.day.toString().padStart(2, "0")}`;
+}
+
 function makeUtcNoonDate(year: number, month: number, day: number) {
   return new Date(Date.UTC(year, month - 1, day, 12));
 }

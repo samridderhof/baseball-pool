@@ -9,9 +9,15 @@ type MlbScheduleResponse = {
     games: Array<{
       gamePk: number;
       gameDate: string;
+      officialDate: string;
+      rescheduleDate?: string;
+      rescheduleGameDate?: string;
+      rescheduledFrom?: string;
+      rescheduledFromDate?: string;
       status: {
         detailedState: string;
         abstractGameState: string;
+        statusCode: string;
       };
       teams: {
         away: {
@@ -31,7 +37,33 @@ type MlbScheduleResponse = {
   }>;
 };
 
-function mapWinner(game: MlbScheduleResponse["dates"][number]["games"][number]) {
+type MlbGame = MlbScheduleResponse["dates"][number]["games"][number];
+
+function addDays(key: string, days: number) {
+  const date = new Date(`${key}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+async function fetchScheduleForDate(key: string) {
+  const response = await fetch(
+    `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${key}`,
+    {
+      next: {
+        revalidate: 300
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Unable to load MLB schedule.");
+  }
+
+  const payload = (await response.json()) as MlbScheduleResponse;
+  return payload.dates[0]?.games ?? [];
+}
+
+function mapWinner(game: MlbGame) {
   const awayScore = game.teams.away.score;
   const homeScore = game.teams.home.score;
 
@@ -48,34 +80,81 @@ function mapWinner(game: MlbScheduleResponse["dates"][number]["games"][number]) 
     : game.teams.home.team.name;
 }
 
+function getRescheduledDate(game: MlbGame, originalDate: string) {
+  if (game.rescheduleGameDate) {
+    return game.rescheduleGameDate;
+  }
+
+  if (game.rescheduledFromDate === originalDate) {
+    return game.officialDate;
+  }
+
+  if (game.officialDate !== originalDate) {
+    return game.officialDate;
+  }
+
+  return null;
+}
+
+function shouldCountForSaturdaySlate(
+  game: MlbGame,
+  originalDate: string,
+  nextDate: string
+) {
+  const makeupDate = getRescheduledDate(game, originalDate);
+
+  if (!makeupDate) {
+    return true;
+  }
+
+  return makeupDate === nextDate;
+}
+
+function isCompletedGame(game: MlbGame) {
+  return (
+    game.status.abstractGameState === "Final" &&
+    !["Postponed", "Cancelled", "Canceled"].includes(game.status.detailedState) &&
+    typeof game.teams.away.score === "number" &&
+    typeof game.teams.home.score === "number"
+  );
+}
+
+function getSlateStatus(games: MlbGame[]): WeeklySlate["status"] {
+  if (games.length === 0) {
+    return "upcoming";
+  }
+
+  if (games.every(isCompletedGame)) {
+    return "final";
+  }
+
+  if (games.every((game) => game.status.abstractGameState === "Preview")) {
+    return "upcoming";
+  }
+
+  return "live";
+}
+
 export async function syncSaturdaySlate(
   leagueId: string,
   saturdayDate: Date
 ): Promise<{ slate: WeeklySlate; games: Game[] }> {
   const admin = createSupabaseAdminClient();
   const key = saturdayKey(saturdayDate);
-
-  const response = await fetch(
-    `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${key}`,
-    {
-      next: {
-        revalidate: 300
-      }
-    }
+  const nextDayKey = addDays(key, 1);
+  const [saturdayGames, nextDayGames] = await Promise.all([
+    fetchScheduleForDate(key),
+    fetchScheduleForDate(nextDayKey)
+  ]);
+  const nextDayMakeups = new Map(
+    nextDayGames
+      .filter((game) => game.rescheduledFromDate === key)
+      .map((game) => [game.gamePk, game] as const)
   );
-
-  if (!response.ok) {
-    throw new Error("Unable to load MLB schedule.");
-  }
-
-  const payload = (await response.json()) as MlbScheduleResponse;
-  const games = payload.dates[0]?.games ?? [];
-
-  const status = games.some((game) => game.status.abstractGameState === "Final")
-    ? games.every((game) => game.status.abstractGameState === "Final")
-      ? "final"
-      : "live"
-    : "upcoming";
+  const slateGames = saturdayGames
+    .filter((game) => shouldCountForSaturdaySlate(game, key, nextDayKey))
+    .map((game) => nextDayMakeups.get(game.gamePk) ?? game);
+  const status = getSlateStatus(slateGames);
 
   const { data: slate, error: slateError } = await admin
     .from("weekly_slates")
@@ -96,7 +175,7 @@ export async function syncSaturdaySlate(
     throw slateError ?? new Error("Unable to create weekly slate.");
   }
 
-  const mappedGames = games.map((game, index) => ({
+  const mappedGames = slateGames.map((game, index) => ({
     external_id: game.gamePk,
     week_id: slate.id,
     starts_at: game.gameDate,
@@ -119,6 +198,28 @@ export async function syncSaturdaySlate(
     }
   }
 
+  if (mappedGames.length === 0) {
+    const { error: cleanupError } = await admin
+      .from("games")
+      .delete()
+      .eq("week_id", slate.id);
+
+    if (cleanupError) {
+      throw cleanupError;
+    }
+  } else {
+    const externalIds = mappedGames.map((game) => game.external_id).join(",");
+    const { error: cleanupError } = await admin
+      .from("games")
+      .delete()
+      .eq("week_id", slate.id)
+      .not("external_id", "in", `(${externalIds})`);
+
+    if (cleanupError) {
+      throw cleanupError;
+    }
+  }
+
   const { data: storedGames, error: storedGamesError } = await admin
     .from("games")
     .select("*")
@@ -131,10 +232,10 @@ export async function syncSaturdaySlate(
 
   const lastGame = storedGames.at(-1);
 
-  if (lastGame && slate.tiebreak_game_id !== lastGame.id) {
+  if (slate.tiebreak_game_id !== (lastGame?.id ?? null)) {
     const { error: updateError } = await admin
       .from("weekly_slates")
-      .update({ tiebreak_game_id: lastGame.id })
+      .update({ tiebreak_game_id: lastGame?.id ?? null })
       .eq("id", slate.id);
 
     if (updateError) {
