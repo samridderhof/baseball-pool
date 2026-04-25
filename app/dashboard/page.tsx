@@ -2,7 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { signOutAction } from "@/app/actions";
 import { getCurrentWeekData } from "@/lib/data";
-import { parseSaturdayKey } from "@/lib/dates";
+import { formatEasternDateTime, parseSaturdayKey } from "@/lib/dates";
 import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
@@ -168,7 +168,7 @@ export default async function DashboardPage() {
                       {game.awayTeam} at {game.homeTeam}
                     </h3>
                     <p className="matrix-callout">
-                      {format(new Date(game.startsAt), "EEE h:mm a")} | {game.status}
+                      {formatEasternDateTime(game.startsAt)} ET | {game.status}
                     </p>
                   </div>
                   <span className={`pill${game.locked ? " locked" : ""}`}>

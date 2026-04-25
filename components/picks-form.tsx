@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { format } from "date-fns";
 import { savePicksAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { formatEasternDateTime } from "@/lib/dates";
 import type { GameWithPick, WeeklyEntry } from "@/lib/types";
 
 type PicksFormProps = {
@@ -49,7 +49,7 @@ export function PicksForm({ weekId, games, weeklyEntry }: PicksFormProps) {
                     {game.away_team} at {game.home_team}
                   </strong>
                   <div className="muted">
-                    {format(new Date(game.starts_at), "EEE h:mm a")}
+                    {formatEasternDateTime(game.starts_at)} ET
                   </div>
                 </div>
                 <span className={`pill${game.locked ? " locked" : ""}`}>

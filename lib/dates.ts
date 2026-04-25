@@ -36,6 +36,22 @@ export function getCurrentDateKey(reference = new Date()) {
     .padStart(2, "0")}-${zoned.day.toString().padStart(2, "0")}`;
 }
 
+export function formatEasternDateTime(
+  value: string | Date,
+  options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit"
+  }
+) {
+  const date = typeof value === "string" ? new Date(value) : value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: EASTERN_TIMEZONE,
+    ...options
+  }).format(date);
+}
+
 function makeUtcNoonDate(year: number, month: number, day: number) {
   return new Date(Date.UTC(year, month - 1, day, 12));
 }
