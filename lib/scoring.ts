@@ -170,6 +170,15 @@ function buildHistoricalWeeklyGroups(
 function buildLiveWeeklyGroups(input: ScoreInput, startingWeekNumber: number) {
   return [...input.weeks]
     .filter((week) => week.status === "final")
+    .filter((week) => {
+      const weekGameIds = new Set(
+        input.games
+          .filter((game) => game.week_id === week.id)
+          .map((game) => game.id)
+      );
+
+      return input.picks.some((pick) => weekGameIds.has(pick.game_id));
+    })
     .sort((left, right) =>
       left.saturday_date.localeCompare(right.saturday_date)
     )
