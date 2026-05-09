@@ -97,7 +97,6 @@ export default async function DashboardPage() {
   const completedCount = games.filter((game) => game.pick).length;
   const revealCount = livePickRevealGames.filter((game) => game.locked).length;
   const slateLabel = format(parseSaturdayKey(slate.saturday_date), "MMMM d, yyyy");
-  const topThree = currentWeekLeaderboard.slice(0, 3);
   const hasLockedGames = livePickRevealGames.some((game) => game.locked);
 
   return (
@@ -139,6 +138,32 @@ export default async function DashboardPage() {
         <div>
           <span>Reveals</span>
           <strong>{revealCount}</strong>
+        </div>
+      </section>
+
+      <section className="leaderboard-panel">
+        <div className="design-section-head">
+          <div>
+            <h2>Live leaderboard</h2>
+            <p>Weekly points update as locked games move through the slate.</p>
+          </div>
+          <Link href="/standings" className="text-link">
+            Full standings
+          </Link>
+        </div>
+        <div className="leaderboard-list">
+          {currentWeekLeaderboard.map((row, index) => (
+            <div key={row.membershipId} className="leaderboard-row">
+              <span>#{index + 1}</span>
+              <div>
+                <strong>{row.displayName}</strong>
+                <small>
+                  {row.liveCorrectPicks} correct - {row.seasonPoints} season pts
+                </small>
+              </div>
+              <b>{row.livePoints}</b>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -185,29 +210,6 @@ export default async function DashboardPage() {
         </div>
 
         <aside className="sports-sidebar">
-          <section>
-            <div className="design-section-head compact">
-              <h2>Live leaders</h2>
-              <Link href="/standings" className="text-link">
-                Full table
-              </Link>
-            </div>
-            <div className="podium-list">
-              {topThree.map((row, index) => (
-                <div key={row.membershipId} className="podium-row">
-                  <span>#{index + 1}</span>
-                  <div>
-                    <strong>{row.displayName}</strong>
-                    <small>
-                      {row.liveCorrectPicks} correct - {row.seasonPoints} season pts
-                    </small>
-                  </div>
-                  <b>{row.livePoints}</b>
-                </div>
-              ))}
-            </div>
-          </section>
-
           <section>
             <div className="design-section-head compact">
               <h2>League activity</h2>

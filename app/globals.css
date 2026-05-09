@@ -586,6 +586,70 @@ th {
   align-items: start;
 }
 
+.leaderboard-panel {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow);
+}
+
+.leaderboard-panel p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.leaderboard-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.leaderboard-row {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(15, 92, 77, 0.12);
+  background: rgba(15, 92, 77, 0.06);
+}
+
+.leaderboard-row span {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-strong);
+  color: white;
+  font-weight: 900;
+}
+
+.leaderboard-row div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.leaderboard-row strong,
+.leaderboard-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-row small {
+  color: var(--muted);
+}
+
+.leaderboard-row b {
+  color: var(--brand-strong);
+  font-size: 1.55rem;
+}
+
 .sports-main,
 .sports-sidebar,
 .dense-panel {
