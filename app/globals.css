@@ -1011,6 +1011,13 @@ th {
   gap: 4px;
 }
 
+.pick-matrix th b {
+  display: block;
+  margin: 3px 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
 .pick-matrix th small,
 .pick-matrix-cell span,
 .pick-matrix-cell small,
@@ -1024,6 +1031,56 @@ th {
 
 .pick-matrix-cell strong {
   color: var(--text);
+}
+
+.pick-matrix-cell {
+  min-height: 92px;
+  align-content: center;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(75, 85, 99, 0.16);
+  background: rgba(75, 85, 99, 0.06);
+  box-shadow: inset 4px 0 0 rgba(75, 85, 99, 0.34);
+}
+
+.pick-matrix-cell b {
+  color: #384252;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.pick-matrix-cell.correct,
+.pick-matrix-cell.winning {
+  border-color: rgba(21, 128, 61, 0.24);
+  background: rgba(21, 128, 61, 0.1);
+  box-shadow: inset 4px 0 0 rgba(21, 128, 61, 0.78);
+}
+
+.pick-matrix-cell.correct b,
+.pick-matrix-cell.winning b {
+  color: #126534;
+}
+
+.pick-matrix-cell.miss,
+.pick-matrix-cell.losing {
+  border-color: rgba(185, 28, 28, 0.22);
+  background: rgba(185, 28, 28, 0.09);
+  box-shadow: inset 4px 0 0 rgba(185, 28, 28, 0.72);
+}
+
+.pick-matrix-cell.miss b,
+.pick-matrix-cell.losing b {
+  color: #9f1d1d;
+}
+
+.pick-matrix-cell.tied {
+  border-color: rgba(217, 119, 6, 0.28);
+  background: rgba(217, 119, 6, 0.12);
+  box-shadow: inset 4px 0 0 rgba(217, 119, 6, 0.76);
+}
+
+.pick-matrix-cell.tied b {
+  color: #9a4f06;
 }
 
 .matrix-empty {

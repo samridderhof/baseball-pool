@@ -14,6 +14,11 @@ type PickOutcome = {
   pointsLabel: string;
   detail: string;
 };
+type RevealOutcome = {
+  key: "correct" | "miss" | "winning" | "losing" | "tied" | "pending";
+  label: string;
+  pointsLabel: string;
+};
 
 function getPickOutcome(game: GameWithPick): PickOutcome {
   if (!game.pick) {
@@ -83,18 +88,42 @@ function StatusDot({ locked }: { locked: boolean }) {
   return <span className={`status-dot ${locked ? "locked" : ""}`} aria-hidden="true" />;
 }
 
-function getRevealResult({
+function getRevealOutcome({
+  awayScore,
+  awayTeam,
+  confidence,
+  homeScore,
+  homeTeam,
   pickedTeam,
   winnerTeam
 }: {
+  awayScore: number | null;
+  awayTeam: string;
+  confidence: number;
+  homeScore: number | null;
+  homeTeam: string;
   pickedTeam: string;
   winnerTeam: string | null;
-}) {
-  if (!winnerTeam) {
-    return "Pending";
+}): RevealOutcome {
+  if (winnerTeam) {
+    return pickedTeam === winnerTeam
+      ? { key: "correct", label: "Correct", pointsLabel: `+${confidence}` }
+      : { key: "miss", label: "Miss", pointsLabel: "0" };
   }
 
-  return pickedTeam === winnerTeam ? "Correct" : "Miss";
+  if (awayScore === null || homeScore === null) {
+    return { key: "pending", label: "Pending", pointsLabel: `+${confidence}?` };
+  }
+
+  if (awayScore === homeScore) {
+    return { key: "tied", label: "Tied", pointsLabel: `+${confidence}?` };
+  }
+
+  const leadingTeam = awayScore > homeScore ? awayTeam : homeTeam;
+
+  return pickedTeam === leadingTeam
+    ? { key: "winning", label: "Winning", pointsLabel: `+${confidence}` }
+    : { key: "losing", label: "Losing", pointsLabel: "0" };
 }
 
 export default async function DashboardPage() {
@@ -113,6 +142,7 @@ export default async function DashboardPage() {
   const slateLabel = format(parseSaturdayKey(slate.saturday_date), "MMMM d, yyyy");
   const hasLockedGames = livePickRevealGames.some((game) => game.locked);
   const lockedRevealGames = livePickRevealGames.filter((game) => game.locked);
+  const gameById = new Map(games.map((game) => [game.id, game]));
 
   return (
     <div className="page-grid sports-variant">
@@ -281,6 +311,10 @@ export default async function DashboardPage() {
                   {lockedRevealGames.map((game) => (
                     <th key={game.gameId}>
                       <span>{game.awayTeam} at {game.homeTeam}</span>
+                      <b>
+                        {gameById.get(game.gameId)?.away_score ?? "-"} -{" "}
+                        {gameById.get(game.gameId)?.home_score ?? "-"}
+                      </b>
                       <small>
                         {formatEasternDateTime(game.startsAt)} ET - {game.status}
                       </small>
@@ -296,19 +330,37 @@ export default async function DashboardPage() {
                       const reveal = game.reveals.find(
                         (entry) => entry.membershipId === player.membershipId
                       );
+                      const gameScore = gameById.get(game.gameId);
 
                       return (
                         <td key={game.gameId}>
-                          {reveal ? (
-                            <div className="pick-matrix-cell">
+                          {reveal && gameScore ? (
+                            (() => {
+                              const outcome = getRevealOutcome({
+                                awayScore: gameScore.away_score,
+                                awayTeam: game.awayTeam,
+                                confidence: reveal.confidence,
+                                homeScore: gameScore.home_score,
+                                homeTeam: game.homeTeam,
+                                pickedTeam: reveal.pickedTeam,
+                                winnerTeam: game.winnerTeam
+                              });
+
+                              return (
+                                <div className={`pick-matrix-cell ${outcome.key}`}>
+                                  <strong>{reveal.pickedTeam}</strong>
+                                  <b>{outcome.pointsLabel}</b>
+                                  <span>{reveal.confidence} confidence</span>
+                                  <small>{outcome.label}</small>
+                                </div>
+                              );
+                            })()
+                          ) : reveal ? (
+                            <div className="pick-matrix-cell pending">
                               <strong>{reveal.pickedTeam}</strong>
-                              <span>{reveal.confidence} pts</span>
-                              <small>
-                                {getRevealResult({
-                                  pickedTeam: reveal.pickedTeam,
-                                  winnerTeam: game.winnerTeam
-                                })}
-                              </small>
+                              <b>+{reveal.confidence}?</b>
+                              <span>{reveal.confidence} confidence</span>
+                              <small>Pending</small>
                             </div>
                           ) : (
                             <span className="matrix-empty">No pick</span>
