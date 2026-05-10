@@ -323,9 +323,12 @@ export default async function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {completionStatus.map((player) => (
+                {currentWeekLeaderboard.map((player, index) => (
                   <tr key={player.membershipId}>
-                    <th scope="row">{player.displayName}</th>
+                    <th scope="row">
+                      <span className="matrix-rank">#{index + 1}</span>
+                      {player.displayName}
+                    </th>
                     {lockedRevealGames.map((game) => {
                       const reveal = game.reveals.find(
                         (entry) => entry.membershipId === player.membershipId
