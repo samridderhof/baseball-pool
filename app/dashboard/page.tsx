@@ -83,6 +83,20 @@ function StatusDot({ locked }: { locked: boolean }) {
   return <span className={`status-dot ${locked ? "locked" : ""}`} aria-hidden="true" />;
 }
 
+function getRevealResult({
+  pickedTeam,
+  winnerTeam
+}: {
+  pickedTeam: string;
+  winnerTeam: string | null;
+}) {
+  if (!winnerTeam) {
+    return "Pending";
+  }
+
+  return pickedTeam === winnerTeam ? "Correct" : "Miss";
+}
+
 export default async function DashboardPage() {
   const {
     membership,
@@ -98,6 +112,7 @@ export default async function DashboardPage() {
   const revealCount = livePickRevealGames.filter((game) => game.locked).length;
   const slateLabel = format(parseSaturdayKey(slate.saturday_date), "MMMM d, yyyy");
   const hasLockedGames = livePickRevealGames.some((game) => game.locked);
+  const lockedRevealGames = livePickRevealGames.filter((game) => game.locked);
 
   return (
     <div className="page-grid sports-variant">
@@ -180,8 +195,11 @@ export default async function DashboardPage() {
               return (
                 <article key={game.id} className={`matchup-card outcome-${outcome.key}`}>
                   <div className="matchup-time">
-                    <StatusDot locked={game.locked} />
-                    {formatEasternDateTime(game.starts_at)} ET
+                    <span>
+                      <StatusDot locked={game.locked} />
+                      {formatEasternDateTime(game.starts_at)} ET
+                    </span>
+                    <strong>{game.status}</strong>
                   </div>
                   <div className="matchup-board">
                     <TeamScore team={game.away_team} score={game.away_score} />
@@ -190,7 +208,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="matchup-live-row">
                     <div className="matchup-meta">
-                      <span>{game.status}</span>
+                      <span>My pick</span>
                       <strong>
                         {game.pick
                           ? `${game.pick.picked_team} - ${game.pick.confidence}`
@@ -255,58 +273,53 @@ export default async function DashboardPage() {
         {!hasLockedGames ? (
           <div className="empty">No games have locked yet for {slateLabel}.</div>
         ) : (
-          <div className="game-list">
-            {livePickRevealGames.map((game) => (
-              <div key={game.gameId} className="week-block">
-                <div className="section-head">
-                  <div>
-                    <h3>
-                      {game.awayTeam} at {game.homeTeam}
-                    </h3>
-                    <p className="matrix-callout">
-                      {formatEasternDateTime(game.startsAt)} ET | {game.status}
-                    </p>
-                  </div>
-                  <span className={`pill${game.locked ? " locked" : ""}`}>
-                    {game.locked ? "Revealed" : "Hidden until lock"}
-                  </span>
-                </div>
-                {game.locked ? (
-                  <div className="table-wrap">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Player</th>
-                          <th>Pick</th>
-                          <th>Confidence</th>
-                          <th>Result</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {game.reveals.map((reveal) => (
-                          <tr key={reveal.membershipId}>
-                            <td>{reveal.displayName}</td>
-                            <td>{reveal.pickedTeam}</td>
-                            <td>{reveal.confidence}</td>
-                            <td>
-                              {game.winnerTeam
-                                ? reveal.pickedTeam === game.winnerTeam
-                                  ? "Correct"
-                                  : "Miss"
-                                : "Pending"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="empty">
-                    Picks for this game will appear automatically at first pitch.
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="pick-matrix-wrap">
+            <table className="pick-matrix">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  {lockedRevealGames.map((game) => (
+                    <th key={game.gameId}>
+                      <span>{game.awayTeam} at {game.homeTeam}</span>
+                      <small>
+                        {formatEasternDateTime(game.startsAt)} ET - {game.status}
+                      </small>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {completionStatus.map((player) => (
+                  <tr key={player.membershipId}>
+                    <th scope="row">{player.displayName}</th>
+                    {lockedRevealGames.map((game) => {
+                      const reveal = game.reveals.find(
+                        (entry) => entry.membershipId === player.membershipId
+                      );
+
+                      return (
+                        <td key={game.gameId}>
+                          {reveal ? (
+                            <div className="pick-matrix-cell">
+                              <strong>{reveal.pickedTeam}</strong>
+                              <span>{reveal.confidence} pts</span>
+                              <small>
+                                {getRevealResult({
+                                  pickedTeam: reveal.pickedTeam,
+                                  winnerTeam: game.winnerTeam
+                                })}
+                              </small>
+                            </div>
+                          ) : (
+                            <span className="matrix-empty">No pick</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

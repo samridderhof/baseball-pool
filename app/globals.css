@@ -514,7 +514,7 @@ th {
   color: white;
   background:
     linear-gradient(90deg, rgba(8, 19, 28, 0.94), rgba(8, 19, 28, 0.66)),
-    url("/players/shohei.png") right 12% bottom / min(360px, 46vw) auto no-repeat,
+    url("/players/acuna.png") right 6% bottom / min(330px, 42vw) auto no-repeat,
     linear-gradient(135deg, #102f2a, #c85f28);
   box-shadow: var(--shadow);
 }
@@ -726,7 +726,28 @@ th {
 .matchup-time {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+}
+
+.matchup-time span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.matchup-time strong {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(31, 36, 48, 0.06);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .status-dot {
@@ -948,6 +969,69 @@ th {
   font-weight: 900;
 }
 
+.pick-matrix-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.pick-matrix {
+  min-width: 760px;
+}
+
+.pick-matrix th,
+.pick-matrix td {
+  min-width: 160px;
+  vertical-align: top;
+}
+
+.pick-matrix thead th {
+  background: rgba(15, 92, 77, 0.06);
+}
+
+.pick-matrix th:first-child,
+.pick-matrix td:first-child {
+  min-width: 180px;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: white;
+}
+
+.pick-matrix thead th:first-child {
+  z-index: 2;
+  background: #f4f7f2;
+}
+
+.pick-matrix th span,
+.pick-matrix th small,
+.pick-matrix-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.pick-matrix th small,
+.pick-matrix-cell span,
+.pick-matrix-cell small,
+.matrix-empty {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.pick-matrix-cell strong {
+  color: var(--text);
+}
+
+.matrix-empty {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+}
+
 .dense-variant {
   --card: rgba(252, 253, 250, 0.92);
 }
@@ -1162,7 +1246,7 @@ th {
   .sports-hero {
     background:
       linear-gradient(90deg, rgba(8, 19, 28, 0.94), rgba(8, 19, 28, 0.7)),
-      url("/players/shohei.png") right -44px bottom / 240px auto no-repeat,
+      url("/players/acuna.png") right -28px bottom / 230px auto no-repeat,
       linear-gradient(135deg, #102f2a, #c85f28);
   }
 
