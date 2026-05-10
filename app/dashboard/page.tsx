@@ -336,7 +336,13 @@ export default async function DashboardPage() {
                       const gameScore = gameById.get(game.gameId);
 
                       return (
-                        <td key={game.gameId}>
+                        <td
+                          key={game.gameId}
+                          data-game={`${game.awayTeam} at ${game.homeTeam}`}
+                          data-score={`${gameById.get(game.gameId)?.away_score ?? "-"}-${
+                            gameById.get(game.gameId)?.home_score ?? "-"
+                          }`}
+                        >
                           {reveal && gameScore ? (
                             (() => {
                               const outcome = getRevealOutcome({

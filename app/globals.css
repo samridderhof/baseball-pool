@@ -1361,4 +1361,86 @@ th {
   .versus {
     text-align: left;
   }
+
+  .pick-matrix-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .pick-matrix,
+  .pick-matrix thead,
+  .pick-matrix tbody,
+  .pick-matrix tr,
+  .pick-matrix th,
+  .pick-matrix td {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pick-matrix {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .pick-matrix thead {
+    display: none;
+  }
+
+  .pick-matrix tbody tr {
+    margin-bottom: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: white;
+    box-shadow: 0 12px 24px rgba(26, 34, 46, 0.08);
+  }
+
+  .pick-matrix tbody th {
+    position: static;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+    background: #f4f7f2;
+  }
+
+  .pick-matrix tbody td {
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(120px, 1fr);
+    gap: 10px;
+    align-items: stretch;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(31, 36, 48, 0.08);
+  }
+
+  .pick-matrix tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .pick-matrix tbody td::before {
+    content: attr(data-game) "  " attr(data-score);
+    min-width: 0;
+    align-self: center;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+
+  .pick-matrix-cell {
+    min-height: 76px;
+    padding: 9px;
+  }
+
+  .pick-matrix-cell b {
+    font-size: 1.25rem;
+  }
+
+  .matrix-empty {
+    min-height: 76px;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(75, 85, 99, 0.06);
+  }
 }
